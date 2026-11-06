@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Costeña - Control de Tablas</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; padding: 20px; text-align: center; }
+        h1 { color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        input, button { padding: 10px; margin: 10px 0; width: 90%; font-size: 16px; }
+        button { background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #218838; }
+        #resultado { margin-top: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Registro de Tablas - La Costeña</h1>
+        <p>Consulta el estado de tu tabla o regístrala:</p>
+        
+        <input type="number" id="numTabla" placeholder="Ingrese el Número de Tabla">
+        <br>
+        <button onclick="consultarTabla()">Consultar / Registrar</button>
+        
+        <div id="resultado"></div>
+    </div>
+
+    <script>
+        // URL de tu aplicación web de Google Apps Script
+        const URL_API = "https://script.google.com/macros/s/AKfycbyjTww1gtfx8-4a_GhHiKt83mkJKrwsyjAZZ3Ym9ajEYhaHPfTIojWz3IShZ2Sk6cc/exec";
+
+        async function consultarTabla() {
+            const numero = document.getElementById('numTabla').value;
+            const resDiv = document.getElementById('resultado');
+
+            if (!numero) {
+                resDiv.innerHTML = "Por favor ingrese un número de tabla válido.";
+                resDiv.style.color = "red";
+                return;
+            }
+
+            resDiv.innerHTML = "Consultando...";
+            resDiv.style.color = "blue";
+
+            try {
+                const response = await fetch(URL_API);
+                const data = await response.json();
+
+                // Buscar el número en los datos obtenidos de Google Sheets
+                const tablaEncontrada = data.find(item => item.numeroTabla == numero);
+
+                if (tablaEncontrada) {
+                    resDiv.innerHTML = `Tabla Nº: ${tablaEncontrada.numeroTabla} <br> 
+                                        Situación: <strong>${tablaEncontrada.situacionTabla}</strong> <br>
+                                        Cliente: ${tablaEncontrada.nombreCompleto || 'No asignado'}`;
+                    resDiv.style.color = "green";
+                } else {
+                    resDiv.innerHTML = "El número de tabla no se encuentra en la base de datos.";
+                    resDiv.style.color = "orange";
+                }
+            } catch (error) {
+                resDiv.innerHTML = "Error al conectar con la base de datos.";
+                resDiv.style.color = "red";
+            }
+        }
+    </script>
+
+</body>
+</html>
