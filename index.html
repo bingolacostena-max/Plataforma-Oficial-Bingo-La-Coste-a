@@ -1,71 +1,187 @@
-<!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>La Costeña - Control de Tablas</title>
-    <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; padding: 20px; text-align: center; }
-        h1 { color: #333; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        input, button { padding: 10px; margin: 10px 0; width: 90%; font-size: 16px; }
-        button { background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background: #218838; }
-        #resultado { margin-top: 20px; font-weight: bold; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BINGO NAVIDEÑO - Emisora La Costeña</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f0f3f8; color: #333; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    
+    /* Header Principal */
+    .header { width: 100%; background: linear-gradient(135deg, #0b2545 0%, #134074 100%); color: white; text-align: center; padding: 20px 15px; border-bottom: 4px solid #e0a96d; position: relative; }
+    .header-logo { width: 110px; height: 110px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.3); background-color: #0b2545; padding: 5px; margin-bottom: 10px; }
+    .header h1 { font-size: 1.6rem; font-weight: 800; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); letter-spacing: 0.5px; }
+    .header p { font-size: 0.95rem; color: #dcdcdc; margin-top: 5px; font-weight: 500; }
+    
+    /* Enlaces Redes Sociales */
+    .social-links { display: flex; justify-content: center; gap: 15px; margin-top: 12px; }
+    .social-btn { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.15); color: white; text-decoration: none; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.2); }
+    .social-btn:hover { background: rgba(255,255,255,0.3); }
+
+    .btn-consulta-ganadores { display: inline-block; margin-top: 15px; background: #2a6f97; color: white; padding: 8px 18px; border-radius: 20px; text-decoration: none; font-size: 0.85rem; font-weight: bold; border: 1px solid #468faf; }
+
+    /* Contenedor Principal Grid */
+    .main-container { width: 100%; max-width: 1100px; padding: 25px 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+    @media (max-width: 850px) { .main-container { grid-template-columns: 1fr; } }
+
+    /* Tarjetas */
+    .card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 8px 20px rgba(0,0,0,0.06); border: 1px solid #e1e6ed; }
+    .card-title { font-size: 1.25rem; font-weight: 700; color: #0b2545; margin-bottom: 18px; text-align: center; border-bottom: 2px solid #eef2f7; padding-bottom: 10px; }
+
+    /* Formulario */
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: #4a5568; margin-bottom: 6px; }
+    .form-group input { width: 100%; padding: 11px 14px; border: 1.5px solid #cbd5e0; border-radius: 8px; font-size: 0.95rem; outline: none; transition: border 0.2s; }
+    .form-group input:focus { border-color: #134074; box-shadow: 0 0 0 3px rgba(19,64,116,0.1); }
+
+    .btn-whatsapp { width: 100%; background-color: #25d366; color: white; font-weight: 700; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 4px 12px rgba(37,211,102,0.3); transition: transform 0.2s, background 0.2s; }
+    .btn-whatsapp:hover { background-color: #20ba5a; transform: translateY(-2px); }
+    .btn-whatsapp span { font-size: 0.75rem; font-weight: 500; opacity: 0.95; }
+
+    /* Cartón de Bingo */
+    .bingo-card-container { display: flex; flex-direction: column; align-items: center; }
+    .bingo-actions { display: flex; gap: 10px; margin-bottom: 15px; }
+    .btn-action { background: #edf2f7; color: #2d3748; border: 1px solid #cbd5e0; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; font-weight: 600; }
+    
+    .bingo-board { width: 100%; max-width: 320px; background: #134074; border-radius: 12px; padding: 12px; color: white; text-align: center; border: 4px solid #e0a96d; box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
+    .bingo-header-title { font-size: 1.1rem; font-weight: 900; color: #ffbc42; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .bingo-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; background: white; padding: 6px; border-radius: 6px; }
+    .bingo-cell-header { background: #0b2545; color: white; font-weight: 900; font-size: 1.2rem; padding: 6px 0; border-radius: 4px; }
+    .bingo-cell { background: #f8fafc; color: #0b2545; font-weight: 800; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; height: 42px; border-radius: 4px; border: 1px solid #e2e8f0; }
+    .bingo-cell.free { background: #e0a96d; color: #0b2545; font-size: 0.7rem; font-weight: 900; text-align: center; }
+    .bingo-footer { margin-top: 10px; font-weight: 800; font-size: 1.1rem; letter-spacing: 1px; }
+
+    /* Footer General */
+    .footer { text-align: center; padding: 20px; color: #718096; font-size: 0.85rem; width: 100%; margin-top: auto; }
+  </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Registro de Tablas - La Costeña</h1>
-        <p>Consulta el estado de tu tabla o regístrala:</p>
-        
-        <input type="number" id="numTabla" placeholder="Ingrese el Número de Tabla">
-        <br>
-        <button onclick="consultarTabla()">Consultar / Registrar</button>
-        
-        <div id="resultado"></div>
+  <!-- Encabezado con Logo y Redes -->
+  <header class="header">
+    <div class="header-logo-container">
+      <img src="propuesta 2de panel de tablas.jfif" alt="Emisora La Costeña" class="header-logo" onerror="this.src='https://via.placeholder.com/110?text=La+Coste%C3%B1a'">
+    </div>
+    <h1>BINGO NAVIDEÑO - Gran Sorteo</h1>
+    <p>Emisora La Costeña</p>
+
+    <div class="social-links">
+      <a href="https://facebook.com" target="_blank" class="social-btn"><i class="fab fa-facebook"></i> @EmisoraLaCostena</a>
+      <a href="https://tiktok.com" target="_blank" class="social-btn"><i class="fab fa-tiktok"></i> @lacostena91.0fm</a>
     </div>
 
-    <script>
-        // URL de tu aplicación web de Google Apps Script
-        const URL_API = "https://script.google.com/macros/s/AKfycbyjTww1gtfx8-4a_GhHiKt83mkJKrwsyjAZZ3Ym9ajEYhaHPfTIojWz3IShZ2Sk6cc/exec";
+    <div>
+      <a href="#" class="btn-consulta-ganadores"><i class="fas fa-search"></i> CONSULTAR GANADORES (Documento Público)</a>
+    </div>
+  </header>
 
-        async function consultarTabla() {
-            const numero = document.getElementById('numTabla').value;
-            const resDiv = document.getElementById('resultado');
+  <!-- Contenido Principal -->
+  <main class="main-container">
+    
+    <!-- Sección Formulario -->
+    <section class="card">
+      <h2 class="card-title">Formulario de Registro</h2>
+      <form id="registroForm" onsubmit="enviarWhatsApp(event)">
+        
+        <div class="form-group">
+          <label for="nombre">Nombre Completo</label>
+          <input type="text" id="nombre" placeholder="Ej. Juan Pérez" required>
+        </div>
 
-            if (!numero) {
-                resDiv.innerHTML = "Por favor ingrese un número de tabla válido.";
-                resDiv.style.color = "red";
-                return;
-            }
+        <div class="form-group">
+          <label for="documento">Documento de Identidad</label>
+          <input type="text" id="documento" placeholder="Ej. 1040123456" required>
+        </div>
 
-            resDiv.innerHTML = "Consultando...";
-            resDiv.style.color = "blue";
+        <div class="form-group">
+          <label for="celular">Número de Celular</label>
+          <input type="tel" id="celular" value="+57 3103754412" required>
+        </div>
 
-            try {
-                const response = await fetch(URL_API);
-                const data = await response.json();
+        <div class="form-group">
+          <label for="ciudad">Ciudad</label>
+          <input type="text" id="ciudad" placeholder="Ej. Medellín" required>
+        </div>
 
-                // Buscar el número en los datos obtenidos de Google Sheets
-                const tablaEncontrada = data.find(item => item.numeroTabla == numero);
+        <button type="submit" class="btn-whatsapp">
+          <i class="fab fa-whatsapp" style="font-size: 1.4rem;"></i>
+          Registrarse y Descargar mi Tabla por WhatsApp
+          <span>(Número: +57 3103754412)</span>
+        </button>
+      </form>
+    </section>
 
-                if (tablaEncontrada) {
-                    resDiv.innerHTML = `Tabla Nº: ${tablaEncontrada.numeroTabla} <br> 
-                                        Situación: <strong>${tablaEncontrada.situacionTabla}</strong> <br>
-                                        Cliente: ${tablaEncontrada.nombreCompleto || 'No asignado'}`;
-                    resDiv.style.color = "green";
-                } else {
-                    resDiv.innerHTML = "El número de tabla no se encuentra en la base de datos.";
-                    resDiv.style.color = "orange";
-                }
-            } catch (error) {
-                resDiv.innerHTML = "Error al conectar con la base de datos.";
-                resDiv.style.color = "red";
-            }
-        }
-    </script>
+    <!-- Sección Vista Previa del Cartón -->
+    <section class="card bingo-card-container">
+      <h2 class="card-title">Tu Tabla de Bingo</h2>
+      
+      <div class="bingo-actions">
+        <button class="btn-action" onclick="alert('Función de descarga iniciada')"><i class="fas fa-download"></i> Descargar Imagen</button>
+        <button class="btn-action" onclick="window.print()"><i class="fas fa-print"></i> Imprimir</button>
+      </div>
 
+      <div class="bingo-board">
+        <div class="bingo-header-title">BINGO NAVIDEÑO</div>
+        <div class="bingo-grid">
+          <div class="bingo-cell-header">B</div>
+          <div class="bingo-cell-header">I</div>
+          <div class="bingo-cell-header">N</div>
+          <div class="bingo-cell-header">G</div>
+          <div class="bingo-cell-header">O</div>
+
+          <div class="bingo-cell">7</div>
+          <div class="bingo-cell">28</div>
+          <div class="bingo-cell">35</div>
+          <div class="bingo-cell">60</div>
+          <div class="bingo-cell">68</div>
+
+          <div class="bingo-cell">9</div>
+          <div class="bingo-cell">21</div>
+          <div class="bingo-cell">33</div>
+          <div class="bingo-cell">50</div>
+          <div class="bingo-cell">63</div>
+
+          <div class="bingo-cell">8</div>
+          <div class="bingo-cell">19</div>
+          <div class="bingo-cell free">LA COSTEÑA</div>
+          <div class="bingo-cell">51</div>
+          <div class="bingo-cell">65</div>
+
+          <div class="bingo-cell">13</div>
+          <div class="bingo-cell">20</div>
+          <div class="bingo-cell">32</div>
+          <div class="bingo-cell">47</div>
+          <div class="bingo-cell">75</div>
+
+          <div class="bingo-cell">5</div>
+          <div class="bingo-cell">27</div>
+          <div class="bingo-cell">41</div>
+          <div class="bingo-cell">48</div>
+          <div class="bingo-cell">62</div>
+        </div>
+        <div class="bingo-footer">CARTÓN 2501</div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <p>&copy; 2026 Emisora La Costeña - Plataforma Oficial de Registro de Tablas</p>
+  </footer>
+
+  <script>
+    function enviarWhatsApp(e) {
+      e.preventDefault();
+      const nombre = document.getElementById('nombre').value;
+      const documento = document.getElementById('documento').value;
+      const celular = document.getElementById('celular').value;
+      const ciudad = document.getElementById('ciudad').value;
+      
+      const mensaje = `¡Hola! Deseo registrar mi Tabla de Bingo.%0A%0A*Datos de Registro:*%0A- *Nombre:* ${nombre}%0A- *Documento:* ${documento}%0A- *Celular:* ${celular}%0A- *Ciudad:* ${ciudad}%0A- *Cartón:* 2501`;
+      
+      window.open(`https://wa.me/573103754412?text=${mensaje}`, '_blank');
+    }
+  </script>
 </body>
 </html>
