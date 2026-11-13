@@ -157,7 +157,8 @@
 
   <script>
     // URL DE TU APLICACIÓN WEB DE GOOGLE APPS SCRIPT
-    const APPS_SCRIPT_URL = "const APPS_SCRIPT_URL = const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzRa1oiGINwankDNIIc5raBQ1agSckUL1y7Cg9p2VWWFibB8AlDsayoxU75471BwX1N/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzRa1oiGINwankDNIIc5raBQ1agSckUL1y7Cg9p2VWWFibB8AlDsayoxU75471BwX1N/exec";
+
     let lineasTablas = [];
     let tablaActual = 1;
 
@@ -299,7 +300,6 @@
       })
       .catch(err => {
         console.error(err);
-        // Fallback por si hay algún bloqueo de red
         const mensaje = `¡Hola! Deseo registrar mi Tabla de Bingo.%0A%0A*Datos de Registro:*%0A- *Nombre:* ${nombre}%0A- *Documento:* ${documento}%0A- *Celular:* ${celular}%0A- *Ciudad:* ${ciudad}%0A- *Cartón Elegido:* N° ${tablaActual}`;
         window.open(`https://wa.me/573103754412?text=${mensaje}`, '_blank');
       });
