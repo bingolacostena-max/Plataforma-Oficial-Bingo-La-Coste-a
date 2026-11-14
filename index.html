@@ -27,9 +27,7 @@
     .btn-whatsapp { width: 100%; background-color: #25d366; color: white; font-weight: 700; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 4px 12px rgba(37,211,102,0.3); transition: transform 0.2s, background 0.2s; }
     .btn-whatsapp:hover { background-color: #20ba5a; transform: translateY(-2px); }
     .btn-whatsapp span { font-size: 0.75rem; font-weight: 500; opacity: 0.95; }
-    #estadoTablaAlerta { padding: 10px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; text-align: center; font-size: 0.9rem; display: none; }
-    .alerta-disponible { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
-    .alerta-ocupada { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
+    .alerta-info { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-weight: 600; text-align: center; font-size: 0.88rem; }
     .bingo-card-container { display: flex; flex-direction: column; align-items: center; }
     .bingo-actions { display: flex; gap: 10px; margin-bottom: 15px; }
     .btn-action { background: #2a6f97; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
@@ -60,27 +58,27 @@
     <section class="card">
       <h2 class="card-title">Formulario de Registro</h2>
       
-      <div id="estadoTablaAlerta">Verificando disponibilidad...</div>
+      <div class="alerta-info" id="textoTablaSeleccionada">Has seleccionado el Cartón N° 1</div>
 
       <form id="registroForm" onsubmit="registrarYEnviarWhatsApp(event)">
         <div class="form-group">
           <label for="nombre">Nombre Completo</label>
-          <input type="text" id="nombre" placeholder="Ej. Juan Pérez" required>
+          <input type="text" id="nombre" name="Nombre" placeholder="Ej. Juan Pérez" required>
         </div>
 
         <div class="form-group">
           <label for="documento">Documento de Identidad</label>
-          <input type="text" id="documento" placeholder="Ej. 1040123456" required>
+          <input type="text" id="documento" name="Documento" placeholder="Ej. 1040123456" required>
         </div>
 
         <div class="form-group">
           <label for="celular">Número de Celular (WhatsApp)</label>
-          <input type="tel" id="celular" value="+573103754412" required>
+          <input type="tel" id="celular" name="Celular" placeholder="Ej. 3001234567" required>
         </div>
 
         <div class="form-group">
           <label for="ciudad">Ciudad</label>
-          <input type="text" id="ciudad" placeholder="Ej. Medellín" required>
+          <input type="text" id="ciudad" name="Ciudad" placeholder="Ej. Medellín" required>
         </div>
 
         <button type="submit" id="btnEnviar" class="btn-whatsapp">
@@ -131,7 +129,8 @@
   </footer>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyizV63zoDXwz1h6MC41S4eoGrO8reXV_sebWA62NpFhXd-9q5hbfK_32XPErSdCMI/exec";
+    // ENLACE DE FORMSPREE CONFIGURADO
+    const FORMSPREE_URL = "https://formspree.io/f/mkjroloq";
 
     let lineasTablas = [];
     let tablaActual = 1;
@@ -148,6 +147,7 @@
         })
         .catch(err => {
           console.error(err);
+          cargarTablaSeleccionada();
         });
     });
 
@@ -160,6 +160,8 @@
 
       tablaActual = num;
       input.value = num;
+      
+      document.getElementById('textoTablaSeleccionada').innerText = `Has seleccionado el Cartón N° ${num}`;
       
       const grid = document.getElementById('gridNumeros');
       grid.innerHTML = `
@@ -193,39 +195,6 @@
       }
 
       document.getElementById('tituloCarton').innerText = `CARTÓN N° ${num}`;
-      verificarDisponibilidadTabla(num);
-    }
-
-    function verificarDisponibilidadTabla(num) {
-      const alerta = document.getElementById('estadoTablaAlerta');
-      const btnEnviar = document.getElementById('btnEnviar');
-      
-      alerta.style.display = 'block';
-      alerta.className = '';
-      alerta.innerText = 'Verificando disponibilidad de la tabla...';
-
-      fetch(`${APPS_SCRIPT_URL}?tabla=${num}`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.estado === 'OCUPADA') {
-            alerta.className = 'alerta-ocupada';
-            alerta.innerText = `⚠️ El Cartón N° ${num} ya está OCUPADO. Por favor elige otro.`;
-            btnEnviar.disabled = true;
-            btnEnviar.style.opacity = '0.6';
-          } else {
-            alerta.className = 'alerta-disponible';
-            alerta.innerText = `✅ El Cartón N° ${num} está DISPONIBLE.`;
-            btnEnviar.disabled = false;
-            btnEnviar.style.opacity = '1';
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          alerta.className = 'alerta-disponible';
-          alerta.innerText = `✅ Tabla N° ${num} lista para registrar.`;
-          btnEnviar.disabled = false;
-          btnEnviar.style.opacity = '1';
-        });
     }
 
     function registrarYEnviarWhatsApp(e) {
@@ -237,36 +206,40 @@
       const ciudad = document.getElementById('ciudad').value;
       const btnEnviar = document.getElementById('btnEnviar');
 
-      btnEnviar.innerText = 'Registrando y abriendo WhatsApp...';
+      btnEnviar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando registro...';
       btnEnviar.disabled = true;
 
-      fetch(APPS_SCRIPT_URL, {
+      // Enviar datos a Formspree
+      fetch(FORMSPREE_URL, {
         method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
-          tabla: tablaActual,
-          nombre: nombre,
-          documento: documento,
-          celular: celular,
-          ciudad: ciudad
+          Carton_Numero: tablaActual,
+          Nombre: nombre,
+          Documento: documento,
+          Celular: celular,
+          Ciudad: ciudad
         })
       })
-      .then(response => response.json())
-      .then(data => {
-        if (data.result === 'OCUPADA') {
-          alert('Lo sentimos, esta tabla acaba de ser ocupada por otro usuario. Por favor selecciona otra.');
-          location.reload();
-          return;
-        }
-
+      .then(response => {
+        // Abrir WhatsApp inmediatamente después de guardar en Formspree
         const mensaje = `¡Hola! Deseo registrar mi Tabla de Bingo.%0A%0A*Datos de Registro:*%0A- *Nombre:* ${nombre}%0A- *Documento:* ${documento}%0A- *Celular:* ${celular}%0A- *Ciudad:* ${ciudad}%0A- *Cartón Elegido:* N° ${tablaActual}`;
         window.open(`https://wa.me/573103754412?text=${mensaje}`, '_blank');
         
-        btnEnviar.innerText = '¡Registrado con Éxito!';
+        btnEnviar.innerHTML = '<i class="fas fa-check"></i> ¡Registrado con Éxito!';
+        setTimeout(() => {
+          btnEnviar.disabled = false;
+          btnEnviar.innerHTML = `<i class="fab fa-whatsapp" style="font-size: 1.4rem;"></i> Registrarse y Enviar Comprobante por WhatsApp <span>(Contacto: +573103754412)</span>`;
+        }, 3000);
       })
       .catch(err => {
         console.error(err);
         const mensaje = `¡Hola! Deseo registrar mi Tabla de Bingo.%0A%0A*Datos de Registro:*%0A- *Nombre:* ${nombre}%0A- *Documento:* ${documento}%0A- *Celular:* ${celular}%0A- *Ciudad:* ${ciudad}%0A- *Cartón Elegido:* N° ${tablaActual}`;
         window.open(`https://wa.me/573103754412?text=${mensaje}`, '_blank');
+        btnEnviar.disabled = false;
       });
     }
 
