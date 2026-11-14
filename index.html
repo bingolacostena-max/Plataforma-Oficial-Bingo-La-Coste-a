@@ -25,9 +25,15 @@
     .form-group input { width: 100%; padding: 11px 14px; border: 1.5px solid #cbd5e0; border-radius: 8px; font-size: 0.95rem; outline: none; }
     .form-group input:focus { border-color: #134074; box-shadow: 0 0 0 3px rgba(19,64,116,0.1); }
     .btn-whatsapp { width: 100%; background-color: #25d366; color: white; font-weight: 700; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 4px 12px rgba(37,211,102,0.3); transition: transform 0.2s, background 0.2s; }
-    .btn-whatsapp:hover { background-color: #20ba5a; transform: translateY(-2px); }
+    .btn-whatsapp:hover:not(:disabled) { background-color: #20ba5a; transform: translateY(-2px); }
+    .btn-whatsapp:disabled { background-color: #94a3b8; cursor: not-allowed; box-shadow: none; }
     .btn-whatsapp span { font-size: 0.75rem; font-weight: 500; opacity: 0.95; }
-    .alerta-info { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-weight: 600; text-align: center; font-size: 0.88rem; }
+    
+    #estadoTablaAlerta { padding: 12px; border-radius: 8px; margin-bottom: 18px; font-weight: bold; text-align: center; font-size: 0.95rem; display: block; }
+    .alerta-cargando { background-color: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; }
+    .alerta-disponible { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
+    .alerta-ocupada { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
+
     .bingo-card-container { display: flex; flex-direction: column; align-items: center; }
     .bingo-actions { display: flex; gap: 10px; margin-bottom: 15px; }
     .btn-action { background: #2a6f97; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
@@ -58,27 +64,27 @@
     <section class="card">
       <h2 class="card-title">Formulario de Registro</h2>
       
-      <div class="alerta-info" id="textoTablaSeleccionada">Has seleccionado el Cartón N° 1</div>
+      <div id="estadoTablaAlerta" class="alerta-cargando">Verificando disponibilidad del Cartón N° 11001...</div>
 
       <form id="registroForm" onsubmit="registrarYEnviarWhatsApp(event)">
         <div class="form-group">
           <label for="nombre">Nombre Completo</label>
-          <input type="text" id="nombre" name="Nombre" placeholder="Ej. Juan Pérez" required>
+          <input type="text" id="nombre" placeholder="Ej. Juan Pérez" required>
         </div>
 
         <div class="form-group">
           <label for="documento">Documento de Identidad</label>
-          <input type="text" id="documento" name="Documento" placeholder="Ej. 1040123456" required>
+          <input type="text" id="documento" placeholder="Ej. 1040123456" required>
         </div>
 
         <div class="form-group">
           <label for="celular">Número de Celular (WhatsApp)</label>
-          <input type="tel" id="celular" name="Celular" placeholder="Ej. 3001234567" required>
+          <input type="tel" id="celular" placeholder="Ej. 3001234567" required>
         </div>
 
         <div class="form-group">
           <label for="ciudad">Ciudad</label>
-          <input type="text" id="ciudad" name="Ciudad" placeholder="Ej. Medellín" required>
+          <input type="text" id="ciudad" placeholder="Ej. Medellín" required>
         </div>
 
         <button type="submit" id="btnEnviar" class="btn-whatsapp">
@@ -90,10 +96,10 @@
     </section>
 
     <section class="card bingo-card-container">
-      <h2 class="card-title">Elige y Visualiza tu Tabla (1 - 30.000)</h2>
+      <h2 class="card-title">Elige y Visualiza tu Tabla (11.001 - 30.000)</h2>
       
       <div style="display: flex; gap: 8px; width: 100%; max-width: 320px; margin-bottom: 15px;">
-        <input type="number" id="numTablaInput" min="1" max="30000" value="1" placeholder="N° Tabla" 
+        <input type="number" id="numTablaInput" min="11001" max="30000" value="11001" placeholder="N° Tabla" 
                style="flex: 1; padding: 10px; border: 2px solid #134074; border-radius: 8px; font-weight: bold; text-align: center; font-size: 1rem;"
                onchange="cargarTablaSeleccionada()">
         <button type="button" onclick="cargarTablaSeleccionada()" 
@@ -119,7 +125,7 @@
           <div class="bingo-cell-header">O</div>
         </div>
         
-        <div class="bingo-footer" id="tituloCarton">CARTÓN N° 1</div>
+        <div class="bingo-footer" id="tituloCarton">CARTÓN N° 11001</div>
       </div>
     </section>
   </main>
@@ -129,11 +135,13 @@
   </footer>
 
   <script>
-    // ENLACE DE FORMSPREE CONFIGURADO
-    const FORMSPREE_URL = "https://formspree.io/f/mkjroloq";
+    // URL DE TU API SHEETDB CONECTADA AL EXCEL
+    const SHEETDB_URL = "https://sheetdb.io/api/v1/dvs9evc07acrw";
+    const TABLA_MINIMA = 11001;
 
     let lineasTablas = [];
-    let tablaActual = 1;
+    let tablaActual = TABLA_MINIMA;
+    let existeFilaEnExcel = false;
 
     window.addEventListener('DOMContentLoaded', () => {
       fetch('tablas.txt')
@@ -153,16 +161,31 @@
 
     function cargarTablaSeleccionada() {
       const input = document.getElementById('numTablaInput');
+      const alerta = document.getElementById('estadoTablaAlerta');
+      const btnEnviar = document.getElementById('btnEnviar');
       let num = parseInt(input.value);
 
-      if (isNaN(num) || num < 1) num = 1;
+      // Bloqueo directo del rango 1 a 11000 ya repartido
+      if (!isNaN(num) && num >= 1 && num < TABLA_MINIMA) {
+        tablaActual = num;
+        renderizarCarton(num);
+        alerta.className = 'alerta-ocupada';
+        alerta.innerHTML = `⛔ Las tablas del <strong>1 al 11.000</strong> ya fueron repartidas. Elige desde la <strong>11.001</strong> en adelante.`;
+        btnEnviar.disabled = true;
+        return;
+      }
+
+      if (isNaN(num) || num < TABLA_MINIMA) num = TABLA_MINIMA;
       if (lineasTablas.length > 0 && num > lineasTablas.length) num = lineasTablas.length;
 
       tablaActual = num;
       input.value = num;
       
-      document.getElementById('textoTablaSeleccionada').innerText = `Has seleccionado el Cartón N° ${num}`;
-      
+      renderizarCarton(num);
+      verificarDisponibilidadSheetDB(num);
+    }
+
+    function renderizarCarton(num) {
       const grid = document.getElementById('gridNumeros');
       grid.innerHTML = `
         <div class="bingo-cell-header">B</div>
@@ -197,50 +220,120 @@
       document.getElementById('tituloCarton').innerText = `CARTÓN N° ${num}`;
     }
 
+    // Consultar en tiempo real en Google Sheets vía SheetDB
+    function verificarDisponibilidadSheetDB(num) {
+      const alerta = document.getElementById('estadoTablaAlerta');
+      const btnEnviar = document.getElementById('btnEnviar');
+      
+      alerta.className = 'alerta-cargando';
+      alerta.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Consultando Cartón N° ${num}...`;
+      btnEnviar.disabled = true;
+
+      fetch(`${SHEETDB_URL}/search?TABLA=${num}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data && data.length > 0) {
+            existeFilaEnExcel = true;
+            const fila = data[0];
+            const estado = (fila.ESTADO || "").toUpperCase().trim();
+            const nombreRegistrado = (fila.NOMBRE || "").trim();
+
+            if (estado === "OCUPADA" || estado === "USADA" || nombreRegistrado !== "") {
+              alerta.className = 'alerta-ocupada';
+              alerta.innerHTML = `⛔ El Cartón N° ${num} ya está <strong>USADO / OCUPADO</strong>. Elige otro número.`;
+              btnEnviar.disabled = true;
+            } else {
+              alerta.className = 'alerta-disponible';
+              alerta.innerHTML = `✅ El Cartón N° ${num} está <strong>DISPONIBLE</strong> para registro.`;
+              btnEnviar.disabled = false;
+            }
+          } else {
+            existeFilaEnExcel = false;
+            alerta.className = 'alerta-disponible';
+            alerta.innerHTML = `✅ El Cartón N° ${num} está <strong>DISPONIBLE</strong> para registro.`;
+            btnEnviar.disabled = false;
+          }
+        })
+        .catch(err => {
+          console.error("Error consultando SheetDB:", err);
+          alerta.className = 'alerta-disponible';
+          alerta.innerHTML = `✅ Cartón N° ${num} seleccionado.`;
+          btnEnviar.disabled = false;
+        });
+    }
+
+    // Guardar en Google Sheets (vía SheetDB) y abrir WhatsApp
     function registrarYEnviarWhatsApp(e) {
       e.preventDefault();
       
-      const nombre = document.getElementById('nombre').value;
-      const documento = document.getElementById('documento').value;
-      const celular = document.getElementById('celular').value;
-      const ciudad = document.getElementById('ciudad').value;
+      if (tablaActual < TABLA_MINIMA) {
+        alert("Las tablas del 1 al 11.000 ya fueron repartidas. Por favor elige desde la 11.001 en adelante.");
+        return;
+      }
+
+      const nombre = document.getElementById('nombre').value.trim();
+      const documento = document.getElementById('documento').value.trim();
+      const celular = document.getElementById('celular').value.trim();
+      const ciudad = document.getElementById('ciudad').value.trim();
       const btnEnviar = document.getElementById('btnEnviar');
 
-      btnEnviar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando registro...';
+      btnEnviar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando y registrando en el sistema...';
       btnEnviar.disabled = true;
 
-      // Enviar datos a Formspree
-      fetch(FORMSPREE_URL, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          Carton_Numero: tablaActual,
-          Nombre: nombre,
-          Documento: documento,
-          Celular: celular,
-          Ciudad: ciudad
+      fetch(`${SHEETDB_URL}/search?TABLA=${tablaActual}`)
+        .then(res => res.json())
+        .then(checkData => {
+          if (checkData && checkData.length > 0) {
+            const est = (checkData[0].ESTADO || "").toUpperCase().trim();
+            const nom = (checkData[0].NOMBRE || "").trim();
+            if (est === "OCUPADA" || est === "USADA" || nom !== "") {
+              alert(`⚠️ ¡Atención! El Cartón N° ${tablaActual} acaba de ser ocupado por otra persona. Por favor selecciona otro número.`);
+              verificarDisponibilidadSheetDB(tablaActual);
+              restaurarBoton();
+              return Promise.reject("YA_OCUPADA");
+            }
+          }
+
+          const urlGuardar = existeFilaEnExcel ? `${SHEETDB_URL}/TABLA/${tablaActual}` : SHEETDB_URL;
+          const metodoHttp = existeFilaEnExcel ? 'PATCH' : 'POST';
+
+          return fetch(urlGuardar, {
+            method: metodoHttp,
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              data: {
+                TABLA: tablaActual,
+                ESTADO: "OCUPADA",
+                NOMBRE: nombre,
+                DOCUMENTO: documento,
+                CELULAR: celular,
+                CIUDAD: ciudad
+              }
+            })
+          });
         })
-      })
-      .then(response => {
-        // Abrir WhatsApp inmediatamente después de guardar en Formspree
-        const mensaje = `¡Hola! Deseo registrar mi Tabla de Bingo.%0A%0A*Datos de Registro:*%0A- *Nombre:* ${nombre}%0A- *Documento:* ${documento}%0A- *Celular:* ${celular}%0A- *Ciudad:* ${ciudad}%0A- *Cartón Elegido:* N° ${tablaActual}`;
-        window.open(`https://wa.me/573103754412?text=${mensaje}`, '_blank');
-        
-        btnEnviar.innerHTML = '<i class="fas fa-check"></i> ¡Registrado con Éxito!';
-        setTimeout(() => {
-          btnEnviar.disabled = false;
-          btnEnviar.innerHTML = `<i class="fab fa-whatsapp" style="font-size: 1.4rem;"></i> Registrarse y Enviar Comprobante por WhatsApp <span>(Contacto: +573103754412)</span>`;
-        }, 3000);
-      })
-      .catch(err => {
-        console.error(err);
-        const mensaje = `¡Hola! Deseo registrar mi Tabla de Bingo.%0A%0A*Datos de Registro:*%0A- *Nombre:* ${nombre}%0A- *Documento:* ${documento}%0A- *Celular:* ${celular}%0A- *Ciudad:* ${ciudad}%0A- *Cartón Elegido:* N° ${tablaActual}`;
-        window.open(`https://wa.me/573103754412?text=${mensaje}`, '_blank');
-        btnEnviar.disabled = false;
-      });
+        .then(response => response.json())
+        .then(() => {
+          verificarDisponibilidadSheetDB(tablaActual);
+          const mensaje = `¡Hola! Deseo registrar mi Tabla de Bingo.%0A%0A*Datos de Registro:*%0A- *Nombre:* ${nombre}%0A- *Documento:* ${documento}%0A- *Celular:* ${celular}%0A- *Ciudad:* ${ciudad}%0A- *Cartón Elegido:* N° ${tablaActual}`;
+          window.open(`https://wa.me/573103754412?text=${mensaje}`, '_blank');
+          restaurarBoton();
+        })
+        .catch(err => {
+          if (err !== "YA_OCUPADA") {
+            console.error(err);
+            alert("Hubo un problema de conexión al guardar en la base de datos. Intenta nuevamente.");
+            restaurarBoton();
+          }
+        });
+    }
+
+    function restaurarBoton() {
+      const btnEnviar = document.getElementById('btnEnviar');
+      btnEnviar.innerHTML = `<i class="fab fa-whatsapp" style="font-size: 1.4rem;"></i> Registrarse y Enviar Comprobante por WhatsApp <span>(Contacto: +573103754412)</span>`;
     }
 
     function descargarCartonImagen() {
