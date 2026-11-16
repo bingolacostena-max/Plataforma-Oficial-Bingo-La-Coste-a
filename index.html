@@ -64,7 +64,7 @@
     <section class="card">
       <h2 class="card-title">Formulario de Registro</h2>
       
-      <div id="estadoTablaAlerta" class="alerta-cargando">Cargando base de tablas...</div>
+      <div id="estadoTablaAlerta" class="alerta-cargando">Verificando disponibilidad del Cartón N° 16001...</div>
 
       <form id="registroForm" onsubmit="registrarYEnviarWhatsApp(event)">
         <div class="form-group">
@@ -96,12 +96,12 @@
     </section>
 
     <section class="card bingo-card-container">
-      <h2 class="card-title">Elige y Visualiza tu Tabla (11.001 - 30.000)</h2>
+      <h2 class="card-title">Elige y Visualiza tu Tabla (16.001 - 30.000)</h2>
       
       <div style="display: flex; gap: 8px; width: 100%; max-width: 320px; margin-bottom: 15px;">
-        <input type="number" id="numTablaInput" min="11001" max="30000" value="11001" placeholder="N° Tabla" 
+        <input type="number" id="numTablaInput" min="16001" max="30000" value="16001" placeholder="N° Tabla" 
                style="flex: 1; padding: 10px; border: 2px solid #134074; border-radius: 8px; font-weight: bold; text-align: center; font-size: 1rem;"
-               oninput="cargarTablaSeleccionada()">
+               oninput="programarConsultaTabla()">
         <button type="button" onclick="cargarTablaSeleccionada()" 
                 style="background: #134074; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: bold; cursor: pointer;">
           <i class="fas fa-search"></i> Ver
@@ -125,7 +125,7 @@
           <div class="bingo-cell-header">O</div>
         </div>
         
-        <div class="bingo-footer" id="tituloCarton">CARTÓN N° 11001</div>
+        <div class="bingo-footer" id="tituloCarton">CARTÓN N° 16001</div>
       </div>
     </section>
   </main>
@@ -135,32 +135,35 @@
   </footer>
 
   <script>
+    const FIREBASE_URL = "https://bingo-lacostena-default-rtdb.firebaseio.com";
     const FORMSPREE_URL = "https://formspree.io/f/mkjroloq";
-    const TABLA_MINIMA = 11001;
+
+    const TABLA_MINIMA = 16001;
     const TABLA_MAXIMA = 30000;
 
     let lineasTablas = [];
     let tablaActual = TABLA_MINIMA;
-    let tablaDisponible = false;
+    let tablaVerificadaOK = false;
+    let temporizadorBusqueda = null;
 
-    // Cargar tablas.txt sin caché para leer cambios recientes en GitHub
     window.addEventListener('DOMContentLoaded', () => {
-      fetch(`tablas.txt?v=${Date.now()}`)
-        .then(response => {
-          if (!response.ok) throw new Error('No se encontró tablas.txt');
-          return response.text();
-        })
+      fetch('tablas.txt')
+        .then(response => response.ok ? response.text() : "")
         .then(texto => {
-          lineasTablas = texto.trim().split(/\r?\n/);
+          if (texto) lineasTablas = texto.trim().split(/\r?\n/);
           cargarTablaSeleccionada();
         })
-        .catch(err => {
-          console.error(err);
-          const alerta = document.getElementById('estadoTablaAlerta');
-          alerta.className = 'alerta-ocupada';
-          alerta.innerHTML = '⚠️ Error cargando el archivo de tablas. Recarga la página.';
-        });
+        .catch(() => cargarTablaSeleccionada());
     });
+
+    function programarConsultaTabla() {
+      tablaVerificadaOK = false;
+      document.getElementById('btnEnviar').disabled = true;
+      clearTimeout(temporizadorBusqueda);
+      temporizadorBusqueda = setTimeout(() => {
+        cargarTablaSeleccionada();
+      }, 350);
+    }
 
     function cargarTablaSeleccionada() {
       const input = document.getElementById('numTablaInput');
@@ -168,7 +171,7 @@
       const btnEnviar = document.getElementById('btnEnviar');
       let num = parseInt(input.value);
 
-      tablaDisponible = false;
+      tablaVerificadaOK = false;
       btnEnviar.disabled = true;
 
       if (isNaN(num)) {
@@ -179,9 +182,9 @@
 
       if (num < TABLA_MINIMA) {
         tablaActual = num;
-        renderizarCarton(num, "");
+        renderizarCarton(num);
         alerta.className = 'alerta-ocupada';
-        alerta.innerHTML = `⛔ Las tablas del <strong>1 al 11.000</strong> ya fueron repartidas. Elige desde la <strong>11.001</strong> en adelante.`;
+        alerta.innerHTML = `⛔ Las tablas del <strong>1 al 16.000</strong> ya fueron repartidas. Elige desde la <strong>16.001</strong> en adelante.`;
         return;
       }
 
@@ -193,28 +196,11 @@
       }
 
       tablaActual = num;
-      const lineaCruda = lineasTablas[num - 1] || "";
-      const partes = lineaCruda.split('|');
-      const cadenaNumeros = partes[0] || "";
-      const estadoTexto = (partes[1] || "").toUpperCase().trim();
-
-      renderizarCarton(num, cadenaNumeros);
-
-      // Revisar si la línea en tablas.txt tiene la marca |OCUPADA o |USADA
-      if (estadoTexto === "OCUPADA" || estadoTexto === "USADA") {
-        alerta.className = 'alerta-ocupada';
-        alerta.innerHTML = `⛔ El Cartón N° ${num} ya está <strong>OCUPADO</strong>. Por favor selecciona otro.`;
-        tablaDisponible = false;
-        btnEnviar.disabled = true;
-      } else {
-        alerta.className = 'alerta-disponible';
-        alerta.innerHTML = `✅ El Cartón N° ${num} está <strong>DISPONIBLE</strong>.`;
-        tablaDisponible = true;
-        btnEnviar.disabled = false;
-      }
+      renderizarCarton(num);
+      verificarDisponibilidadFirebase(num);
     }
 
-    function renderizarCarton(num, cadenaNumeros) {
+    function renderizarCarton(num) {
       const grid = document.getElementById('gridNumeros');
       grid.innerHTML = `
         <div class="bingo-cell-header">B</div>
@@ -225,8 +211,8 @@
       `;
 
       let nums = [];
-      if (cadenaNumeros) {
-        nums = cadenaNumeros.split(';').map(n => n.trim());
+      if (lineasTablas.length > 0 && lineasTablas[num - 1]) {
+        nums = lineasTablas[num - 1].split('|')[0].split(';').map(n => n.trim());
       } else {
         nums = Array(25).fill(0).map((_, i) => (i + num) * 3 % 75 + 1);
       }
@@ -249,11 +235,51 @@
       document.getElementById('tituloCarton').innerText = `CARTÓN N° ${num}`;
     }
 
+    function verificarDisponibilidadFirebase(num) {
+      const alerta = document.getElementById('estadoTablaAlerta');
+      const btnEnviar = document.getElementById('btnEnviar');
+
+      tablaVerificadaOK = false;
+      btnEnviar.disabled = true;
+      alerta.className = 'alerta-cargando';
+      alerta.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Verificando Cartón N° ${num}...`;
+
+      fetch(`${FIREBASE_URL}/tablas_ocupadas/${num}.json?_t=${Date.now()}`)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          if (num !== tablaActual) return;
+
+          if (data !== null) {
+            alerta.className = 'alerta-ocupada';
+            alerta.innerHTML = `⛔ El Cartón N° ${num} ya está <strong>OCUPADO / VENDIDO</strong>. Elige otro número.`;
+            tablaVerificadaOK = false;
+            btnEnviar.disabled = true;
+          } else {
+            alerta.className = 'alerta-disponible';
+            alerta.innerHTML = `✅ El Cartón N° ${num} está <strong>DISPONIBLE</strong> para registro.`;
+            tablaVerificadaOK = true;
+            btnEnviar.disabled = false;
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          alerta.className = 'alerta-ocupada';
+          alerta.innerHTML = `⚠️ Error de conexión al verificar el Cartón N° ${num}. Intenta de nuevo.`;
+          tablaVerificadaOK = false;
+          btnEnviar.disabled = true;
+        });
+    }
+
     function registrarYEnviarWhatsApp(e) {
       e.preventDefault();
-      
-      if (!tablaDisponible || tablaActual < TABLA_MINIMA) {
-        alert("Esta tabla no está disponible. Elige otra antes de continuar.");
+
+      const numInput = parseInt(document.getElementById('numTablaInput').value);
+      if (!tablaVerificadaOK || numInput !== tablaActual || tablaActual < TABLA_MINIMA) {
+        alert("Debes seleccionar una tabla disponible antes de continuar.");
+        cargarTablaSeleccionada();
         return;
       }
 
@@ -263,33 +289,68 @@
       const ciudad = document.getElementById('ciudad').value.trim();
       const btnEnviar = document.getElementById('btnEnviar');
 
-      btnEnviar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando registro...';
+      btnEnviar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Bloqueando cartón y registrando...';
       btnEnviar.disabled = true;
 
-      // Bloquear en la sesión actual del navegador para que no envíen dos veces el mismo cartón
-      lineasTablas[tablaActual - 1] = `${lineasTablas[tablaActual - 1].split('|')[0]}|OCUPADA`;
+      fetch(`${FIREBASE_URL}/tablas_ocupadas/${tablaActual}.json?_t=${Date.now()}`)
+        .then(res => res.json())
+        .then(existente => {
+          if (existente !== null) {
+            alert(`⚠️ ¡Atención! El Cartón N° ${tablaActual} acaba de ser ocupado por otro cliente. Elige otro.`);
+            verificarDisponibilidadFirebase(tablaActual);
+            restaurarBoton();
+            return Promise.reject("YA_OCUPADA");
+          }
 
-      fetch(FORMSPREE_URL, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          Carton_Numero: tablaActual,
-          Nombre: nombre,
-          Documento: documento,
-          Celular: celular,
-          Ciudad: ciudad
+          return fetch(`${FIREBASE_URL}/tablas_ocupadas/${tablaActual}.json`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tabla: tablaActual,
+              estado: "OCUPADA",
+              nombre: nombre,
+              documento: documento,
+              celular: celular,
+              ciudad: ciudad,
+              fecha: new Date().toLocaleString('es-CO')
+            })
+          });
         })
-      })
-      .finally(() => {
-        const mensaje = `¡Hola! Deseo registrar mi Tabla de Bingo.%0A%0A*Datos de Registro:*%0A- *Nombre:* ${nombre}%0A- *Documento:* ${documento}%0A- *Celular:* ${celular}%0A- *Ciudad:* ${ciudad}%0A- *Cartón Elegido:* N° ${tablaActual}`;
-        window.open(`https://wa.me/573103754412?text=${mensaje}`, '_blank');
-        
-        btnEnviar.innerHTML = `<i class="fab fa-whatsapp" style="font-size: 1.4rem;"></i> Registrarse y Enviar Comprobante por WhatsApp <span>(Contacto: +573103754412)</span>`;
-        cargarTablaSeleccionada();
-      });
+        .then(res => {
+          if (!res.ok) throw new Error("Error guardando en Firebase");
+          return res.json();
+        })
+        .then(() => {
+          fetch(FORMSPREE_URL, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              Carton_Numero: tablaActual,
+              Nombre: nombre,
+              Documento: documento,
+              Celular: celular,
+              Ciudad: ciudad
+            })
+          }).catch(() => {});
+
+          verificarDisponibilidadFirebase(tablaActual);
+          const mensaje = `¡Hola! Deseo registrar mi Tabla de Bingo.%0A%0A*Datos de Registro:*%0A- *Nombre:* ${nombre}%0A- *Documento:* ${documento}%0A- *Celular:* ${celular}%0A- *Ciudad:* ${ciudad}%0A- *Cartón Elegido:* N° ${tablaActual}`;
+          window.open(`https://wa.me/573103754412?text=${mensaje}`, '_blank');
+          restaurarBoton();
+        })
+        .catch(err => {
+          if (err !== "YA_OCUPADA") {
+            console.error(err);
+            alert("No se pudo conectar con la base de datos. Intenta de nuevo.");
+            verificarDisponibilidadFirebase(tablaActual);
+            restaurarBoton();
+          }
+        });
+    }
+
+    function restaurarBoton() {
+      const btnEnviar = document.getElementById('btnEnviar');
+      btnEnviar.innerHTML = `<i class="fab fa-whatsapp" style="font-size: 1.4rem;"></i> Registrarse y Enviar Comprobante por WhatsApp <span>(Contacto: +573103754412)</span>`;
     }
 
     function descargarCartonImagen() {
