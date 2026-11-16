@@ -115,7 +115,7 @@
 
       <div class="bingo-actions">
         <button type="button" class="btn-action" onclick="descargarCartonImagen()"><i class="fas fa-download"></i> Descargar Imagen</button>
-        <button type="button" class="btn-action btn-excel" onclick="descargarExcelInscritos()"><i class="fas fa-file-excel"></i> Descargar Excel de Inscritos</button>
+        <button type="button" class="btn-action btn-excel" onclick="pedirPasswordExcel()"><i class="fas fa-file-excel"></i> Descargar Excel de Inscritos</button>
         <button type="button" class="btn-action" onclick="window.print()" style="background: #4a5568;"><i class="fas fa-print"></i> Imprimir</button>
       </div>
 
@@ -143,6 +143,9 @@
   <script>
     const FIREBASE_URL = "https://bingo-lacostena-default-rtdb.firebaseio.com";
     const FORMSPREE_URL = "https://formspree.io/f/mkjroloq";
+
+    // CONTRASEÑA SECRETA PARA DESCARGAR EL EXCEL
+    const PASSWORD_REPORTE = "07gcx";
 
     const TABLA_MINIMA = 16001;
     const TABLA_MAXIMA = 30000;
@@ -354,7 +357,18 @@
         });
     }
 
-    // Función para descargar todos los registros directamente en Excel (.xlsx)
+    function pedirPasswordExcel() {
+      let passwordIngresada = prompt("🔒 Ingresa la contraseña de administración para descargar el Excel:");
+      
+      if (passwordIngresada === null) return;
+
+      if (passwordIngresada.trim() === PASSWORD_REPORTE) {
+        descargarExcelInscritos();
+      } else {
+        alert("❌ Contraseña incorrecta. Acceso denegado.");
+      }
+    }
+
     function descargarExcelInscritos() {
       fetch(`${FIREBASE_URL}/tablas_ocupadas.json`)
         .then(res => res.json())
@@ -380,10 +394,8 @@
             }
           });
 
-          // Ordenar por número de tabla
           listaRegistros.sort((a, b) => a["N° TABLA"] - b["N° TABLA"]);
 
-          // Crear hoja de Excel y archivo descargable
           const worksheet = XLSX.utils.json_to_sheet(listaRegistros);
           const workbook = XLSX.utils.book_new();
           XLSX.utils.book_append_sheet(workbook, worksheet, "Inscritos Bingo");
